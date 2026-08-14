@@ -11,6 +11,26 @@
     <link rel="icon" href="data:," />
     <link rel="stylesheet" href="https://ds.lucianlabs.ca/waveloop.css" />
     <script type="module" src="https://ds.lucianlabs.ca/waveloop.js"></script>
+    <script>
+      // @dank-inc/sketchy@0.26.x — what this package's `^0.26.3` range resolves
+      // to, since a caret on a 0.x version never reaches sketchy's current 1.x —
+      // does require('dotenv') and calls dotenv.config() at MODULE SCOPE in
+      // lib/config.js. dotenv is Node-only and is not even declared among
+      // sketchy's dependencies, so importing react-sketchy in a browser throws
+      // "process is not defined" before a single component renders.
+      //
+      // This shim is the minimum that lets the module finish importing. dotenv's
+      // own file read is already inside a try/catch, so it degrades to a no-op.
+      // It has to run before the bundle, hence a blocking inline script.
+      window.process = window.process || {
+        env: {},
+        cwd: function () {
+          return '/'
+        },
+        platform: 'browser',
+        version: '',
+      }
+    </script>
   </head>
   <body>
     <wl-demo

@@ -138,103 +138,88 @@ const Knob = ({
 
 /* ── panels ─────────────────────────────────────────────────────────────── */
 
-const ComponentPanel = () => {
+const StagePanel = () => {
   const [which, setWhich] = useState(0)
-  const [animate, setAnimate] = useState(true)
   const [density, setDensity] = useState(1)
   const [speed, setSpeed] = useState(1)
 
   knobs.density = density
   knobs.speed = speed
 
-  // The component remounts its canvas whenever `sketch` changes identity, so
-  // the sketch reference must be stable across renders that only change knobs.
   const sketch = useMemo(() => SKETCHES[which], [which])
 
   return (
-    <Section title="ReactSketchy">
-      <p className="wl-muted">
-        One component, one sketch. The effect creates the canvas on mount and tears it down on
-        unmount, so switching sketches below is a real remount — not a re-render.
-      </p>
+    <>
+      <Section title="ReactSketchy">
+        <p className="wl-muted">
+          One component, one sketch. The effect creates the canvas on mount and tears it down on
+          unmount, so changing the sketch below is a real remount rather than a re-render.
+        </p>
 
-      <Code>{`<ReactSketchy
-  type="2d"
-  sketch={${NAMES[which]}}
-  dimensions={[900, 460]}
-  animate={${animate}}
-/>`}</Code>
+        <p className="wl-muted">
+          There is exactly one stage on this page on purpose. sketchy resolves its drawing surface
+          with <code>document.querySelector('canvas')</code>, which finds the first canvas in the
+          whole document rather than one inside the container it was given — so two ReactSketchy
+          components mounted as siblings both bind to the same element and one of them wins. That
+          constraint is the reason SketchBrowser drives this same stage instead of previewing into a
+          second one.
+        </p>
 
-      <div
-        style={{
-          marginTop: '0.75rem',
-          border: '2px solid color-mix(in oklab, var(--wl-accent) 32%, var(--wl-line))',
-          background: 'var(--wl-bg-deep)',
-          display: 'flex',
-          justifyContent: 'center',
-          overflow: 'hidden',
-        }}
-      >
-        <ReactSketchy
-          key={`${which}-${animate}`}
-          type="2d"
-          sketch={sketch}
-          dimensions={[900, 460]}
-          animate={animate}
-        />
-      </div>
-
-      <div className="wl-row" style={{ marginTop: '0.75rem' }}>
-        {/* @ts-expect-error — custom element */}
-        <wl-segmented
-          options={NAMES.join(',')}
-          value={NAMES[which]}
-          ref={(el: HTMLElement | null) => {
-            if (!el || (el as unknown as { _bound?: boolean })._bound) return
-            ;(el as unknown as { _bound?: boolean })._bound = true
-            el.addEventListener('wl-input', (e) =>
-              setWhich(NAMES.indexOf((e as CustomEvent<{ value: string }>).detail.value))
-            )
-          }}
-        />
-        <button className="wl-btn wl-btn--ghost" onClick={() => setAnimate((a) => !a)}>
-          {animate ? 'animating' : 'static'}
-        </button>
-      </div>
-
-      <div className="wl-grid" style={{ marginTop: '0.75rem' }}>
-        <Knob label="density" value={density} min={0.1} max={1.5} step={0.01} onChange={setDensity} />
-        <Knob label="speed" value={speed} min={0} max={3} step={0.01} onChange={setSpeed} />
-      </div>
-    </Section>
-  )
-}
-
-const BrowserPanel = () => (
-  <Section title="SketchBrowser">
-    <p className="wl-muted">
-      Hand it an array and a child element to clone per sketch. It keeps the index, renders prev /
-      next, and with <code>controls</code> set it binds q and e to page through from the keyboard.
-    </p>
-
-    <Code>{`<SketchBrowser sketches={[bloom, weave, drift]} controls animate>
-  <ReactSketchy type="2d" sketch={bloom} dimensions={[420, 300]} />
+        <Code>{`<SketchBrowser sketches={[bloom, weave, drift]} controls animate>
+  <ReactSketchy type="2d" sketch={${NAMES[which]}} dimensions={[900, 460]} animate />
 </SketchBrowser>`}</Code>
 
-    <div
-      style={{
-        marginTop: '0.75rem',
-        border: '1px solid var(--wl-line)',
-        background: 'var(--wl-bg-deep)',
-        padding: '0.9rem',
-      }}
-    >
-      <SketchBrowser sketches={SKETCHES} controls animate dimensions={[420, 300]}>
-        <ReactSketchy type="2d" sketch={bloom} dimensions={[420, 300]} animate />
-      </SketchBrowser>
-    </div>
-  </Section>
-)
+        <div
+          style={{
+            marginTop: '0.75rem',
+            border: '2px solid color-mix(in oklab, var(--wl-accent) 32%, var(--wl-line))',
+            background: 'var(--wl-bg-deep)',
+            padding: '0.9rem',
+          }}
+        >
+          <SketchBrowser sketches={SKETCHES} controls animate dimensions={[900, 460]}>
+            <ReactSketchy
+              key={which}
+              type="2d"
+              sketch={sketch}
+              dimensions={[900, 460]}
+              animate
+            />
+          </SketchBrowser>
+        </div>
+
+        <div className="wl-row" style={{ marginTop: '0.75rem' }}>
+          {NAMES.map((n, i) => (
+            <button
+              key={n}
+              className={`wl-btn${which === i ? '' : ' wl-btn--ghost'}`}
+              onClick={() => setWhich(i)}
+            >
+              {n}
+            </button>
+          ))}
+          <span className="wl-silk">or press q / e</span>
+        </div>
+
+        <div className="wl-grid" style={{ marginTop: '0.75rem' }}>
+          <Knob label="density" value={density} min={0.1} max={1.5} step={0.01} onChange={setDensity} />
+          <Knob label="speed" value={speed} min={0} max={3} step={0.01} onChange={setSpeed} />
+        </div>
+      </Section>
+
+      <Section title="SketchBrowser">
+        <p className="wl-muted">
+          The wrapper around the stage above. Hand it an array and a child element to clone per
+          sketch: it keeps the index, renders prev / next, and with <code>controls</code> set it binds
+          q and e to page through from the keyboard.
+        </p>
+        <Code>{`<SketchBrowser sketches={sketches} controls animate dimensions={[900, 460]}>
+  <ReactSketchy type="2d" sketch={sketches[0]} dimensions={[900, 460]} animate />
+</SketchBrowser>`}</Code>
+      </Section>
+    </>
+  )
+}
 
 const Install = () => (
   <Section title="install">
@@ -297,8 +282,7 @@ const Api = () => (
 const App = () => (
   <>
     <Install />
-    <ComponentPanel />
-    <BrowserPanel />
+    <StagePanel />
     <Api />
   </>
 )
