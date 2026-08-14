@@ -1,16 +1,9 @@
 import { MutableRefObject, useEffect, useRef } from "react";
-import {
-  createParams,
-  load3dSketch,
-  loadSketch,
-  create3dParams,
-  Sketch3D,
-  Sketch,
-} from "@dank-inc/sketchy";
+import { createParams, loadSketch } from "@dank-inc/sketchy";
+import type { Sketch } from "@dank-inc/sketchy";
 
-type Props = {
-  type: "3d" | "2d";
-  sketch: Sketch | Sketch3D;
+export type ReactSketchyProps = {
+  sketch: Sketch;
   className?: string;
   elRef?: MutableRefObject<HTMLElement | null>;
   dimensions?: [number, number];
@@ -23,43 +16,57 @@ export const ReactSketchy = ({
   className,
   animate,
   elRef,
-  type,
-}: Props) => {
+}: ReactSketchyProps) => {
   const ref = useRef<HTMLDivElement | null>(null);
 
-  useEffect(() => {
-    if (!ref.current) return;
-    const el = elRef?.current || ref.current;
+  // deps compare the tuple by value; an inline dimensions={[600, 600]} is a new
+  // identity every render and would otherwise tear the canvas down each time.
+  const width = dimensions?.[0];
+  const height = dimensions?.[1];
 
-    const params =
-      type === "3d"
-        ? load3dSketch(
-            sketch as Sketch3D,
-            create3dParams({
-              containerId: "dank-vision",
-              w: dimensions?.[0],
-              h: dimensions?.[1],
-              animated: animate,
-            })
-          )
-        : loadSketch(
-            sketch as Sketch,
-            createParams({
-              element: el,
-              dimensions,
-              animate,
-            })
-          );
+  useEffect(() => {
+    // refs are attached before passive effects run, so a caller's elRef is
+    // already populated here on the first commit.
+    const el = elRef?.current ?? ref.current;
+    if (!el) return;
+
+    const params = loadSketch(
+      sketch,
+      createParams({
+        element: el,
+        dimensions,
+        animate,
+      })
+    );
+
+    // sketchy calls the outgoing sketch's onKill itself — when a new sketch
+    // takes the canvas, and when a frame finds the canvas already detached —
+    // while on unmount nothing reaches it but the cleanup below. Both routes
+    // have to stay, and React 18 detaches the canvas a phase before it runs
+    // that cleanup, so both can fire for one teardown. Put the consumer's
+    // handler behind a single-shot wrapper and let whichever side gets there
+    // first be the only call. The sketch assigns onKill while loadSketch runs,
+    // hence wrapping after it returns.
+    const onKill = params.onKill;
+    let killed = false;
+    const kill = () => {
+      if (killed) return;
+      killed = true;
+      onKill?.();
+    };
+    params.onKill = kill;
 
     return () => {
-      if (params) params.animated = false;
-
-      const child = el.firstChild;
-      child && el.removeChild(child);
+      params.stop();
+      kill();
+      // only the canvas sketchy marked as its own — an element handed to us
+      // through elRef may hold children the caller put there.
+      el.querySelector(":scope > canvas[data-sketchy]")?.remove();
     };
-  }, [sketch, ref, elRef, dimensions, animate, type]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sketch, elRef, width, height, animate]);
 
   if (elRef) return null;
 
-  return <div className={className} id="dank-vision" ref={ref}></div>;
+  return <div className={className} ref={ref}></div>;
 };

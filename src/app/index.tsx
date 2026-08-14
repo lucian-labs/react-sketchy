@@ -13,7 +13,8 @@ export const App = () => {
       <button onClick={toggle}>Multi Mode</button>
       {multi ? (
         <SketchBrowser animate sketches={sketches}>
-          <ReactSketchy />
+          {/* sketch is required at the JSX site; SketchBrowser clones over it */}
+          <ReactSketchy sketch={sketches[0]} />
         </SketchBrowser>
       ) : (
         <ReactSketchy animate dimensions={[700, 700]} sketch={sketches[0]} />

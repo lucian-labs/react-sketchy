@@ -2,9 +2,8 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "noEmit": false,
-    "outDir": "lib",
-    "declaration": true,
-    "module": "commonjs"
+    "outDir": "esm",
+    "module": "esnext"
   },
   "include": ["src/lib"]
 }

@@ -12,9 +12,6 @@ export default defineConfig({
     alias: {
       // Import the library by its published name; resolve to working-tree src.
       '@dank-inc/react-sketchy': resolve(__dirname, 'src/lib'),
-      // Replace the Node-only dotenv that sketchy 0.26.x imports at module
-      // scope — see demo/dotenv-stub.ts.
-      dotenv: resolve(__dirname, 'demo/dotenv-stub.ts'),
     },
   },
 

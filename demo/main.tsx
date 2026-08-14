@@ -1,14 +1,7 @@
 /* react-sketchy demo — https://react-sketchy.lucianlabs.ca
  *
- * The sketches here are written against @dank-inc/sketchy 0.26.x, which is what
- * this package's `^0.26.3` dependency actually resolves to — sketchy itself is
- * on 1.1.1, and a caret range on a 0.x version never crosses to 1.x. That older
- * params object has no `data` bag and its circle/shape helpers take no options,
- * so live controls are held in module scope and read per frame.
- *
- * Only type="2d" is exercised. The 3d path calls create3dParams with a
- * hardcoded containerId of "dank-vision", so it ignores the component's own ref
- * — see the review.
+ * Live controls are held in module scope and read per frame rather than passed
+ * through `params.data`, so moving a knob never reloads the sketch.
  */
 
 import { StrictMode, useMemo, useState } from 'react'
@@ -156,17 +149,8 @@ const StagePanel = () => {
           unmount, so changing the sketch below is a real remount rather than a re-render.
         </p>
 
-        <p className="wl-muted">
-          There is exactly one stage on this page on purpose. sketchy resolves its drawing surface
-          with <code>document.querySelector('canvas')</code>, which finds the first canvas in the
-          whole document rather than one inside the container it was given — so two ReactSketchy
-          components mounted as siblings both bind to the same element and one of them wins. That
-          constraint is the reason SketchBrowser drives this same stage instead of previewing into a
-          second one.
-        </p>
-
         <Code>{`<SketchBrowser sketches={[bloom, weave, drift]} controls animate>
-  <ReactSketchy type="2d" sketch={${NAMES[which]}} dimensions={[900, 460]} animate />
+  <ReactSketchy sketch={${NAMES[which]}} dimensions={[900, 460]} animate />
 </SketchBrowser>`}</Code>
 
         <div
@@ -178,13 +162,7 @@ const StagePanel = () => {
           }}
         >
           <SketchBrowser sketches={SKETCHES} controls animate dimensions={[900, 460]}>
-            <ReactSketchy
-              key={which}
-              type="2d"
-              sketch={sketch}
-              dimensions={[900, 460]}
-              animate
-            />
+            <ReactSketchy key={which} sketch={sketch} dimensions={[900, 460]} animate />
           </SketchBrowser>
         </div>
 
@@ -214,7 +192,7 @@ const StagePanel = () => {
           q and e to page through from the keyboard.
         </p>
         <Code>{`<SketchBrowser sketches={sketches} controls animate dimensions={[900, 460]}>
-  <ReactSketchy type="2d" sketch={sketches[0]} dimensions={[900, 460]} animate />
+  <ReactSketchy sketch={sketches[0]} dimensions={[900, 460]} animate />
 </SketchBrowser>`}</Code>
       </Section>
     </>
@@ -252,13 +230,17 @@ const Api = () => (
           <tr>
             <td>ReactSketchy</td>
             <td>component</td>
-            <td>{'{ type, sketch, dimensions?, animate?, className?, elRef? }'}</td>
+            <td>{'{ sketch, dimensions?, animate?, className?, elRef? }'}</td>
             <td>Mounts a sketch into its own div. The effect owns load and teardown.</td>
           </tr>
           <tr>
             <td>SketchBrowser</td>
             <td>component</td>
-            <td>{'{ sketches, children, controls?, dimensions?, animate?, wrap? }'}</td>
+            <td>
+              {
+                '{ sketches, children, controls?, showControls?, className?, wrap?, dimensions?, animate? }'
+              }
+            </td>
             <td>Holds an index over a set of sketches and clones the child per selection.</td>
           </tr>
           <tr>
@@ -266,12 +248,6 @@ const Api = () => (
             <td>prop</td>
             <td>{'MutableRefObject<HTMLElement | null>'}</td>
             <td>Render into an element you own instead of the component’s own div.</td>
-          </tr>
-          <tr>
-            <td>props.type</td>
-            <td>prop</td>
-            <td>{"'2d' | '3d'"}</td>
-            <td>Picks the sketchy loader. Only 2d is exercised here — see the review on the 3d path.</td>
           </tr>
         </tbody>
       </table>
