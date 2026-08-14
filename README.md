@@ -1,5 +1,7 @@
 # React Sketchy!
 
+**[Live demo →](https://react-sketchy.lucianlabs.ca)** · [npm](https://www.npmjs.com/package/@dank-inc/react-sketchy) · [all packages](https://lucianlabs.ca/packages/)
+
 A dank wrapper for [Sketchy!](https://github.com/dank-inc/sketchy).
 
 Simply input your sketch into the react component prop and call'er a day, bud!
